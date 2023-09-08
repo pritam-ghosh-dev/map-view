@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
         mapWebView.settings.loadWithOverviewMode = true
         mapWebView.settings.databaseEnabled = true
         mapWebView.settings.domStorageEnabled = true
-        mapWebView.settings.cacheMode= WebSettings.LOAD_NO_CACHE
+        mapWebView.settings.cacheMode = WebSettings.LOAD_NO_CACHE
 
         mapWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
@@ -90,16 +90,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveUrlDataToFile() {
-            webUrlCoroutineJob = CoroutineScope(Dispatchers.IO).launch {
-                loadAndSaveDataFromUrlToFile()
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "Loading finished", Toast.LENGTH_SHORT).show()
-                }
+        webUrlCoroutineJob = CoroutineScope(Dispatchers.IO).launch {
+            loadAndSaveDataFromUrlToFile()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@MainActivity, "Loading finished", Toast.LENGTH_SHORT).show()
             }
+        }
 
     }
 
-    fun loadUrlIntoWebView() {
+    private fun loadUrlIntoWebView() {
         webUrlCoroutineJob = CoroutineScope(Dispatchers.IO).launch {
             val path: File = filesDir
             val file = File(path, "offlineFile.txt")
@@ -113,8 +113,9 @@ class MainActivity : AppCompatActivity() {
             }
             val htmlString = String(bytes)
             withContext(Dispatchers.Main) {
-                mapWebView.loadDataWithBaseURL("file:///android_asset/map/map.html", htmlString,
-                    "text/html", "base64", null)
+                mapWebView.loadDataWithBaseURL(
+                    "file:///android_asset/map/map.html", htmlString, "text/html", "base64", null
+                )
             }
         }
     }
