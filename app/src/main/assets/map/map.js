@@ -5,7 +5,6 @@
 	  map = new Map(document.getElementById("map"), {
 	    center: myLatLng,
 	    zoom: 15,
-	    mapId: "7c6e5bbb618e38d0",
 	  });
 	  new google.maps.Marker({
 	    position: myLatLng,
@@ -27,7 +26,11 @@
         map.setCenter(myLatLng);
         Android.recenterMap();
     }
-
+    function enableDarkMode(darkModeStyles) {
+    console.log(darkModeStyles)
+      //  const darkStyles = JSON.parse(darkModeStyles)
+        map.setOptions({styles: darkModeStyles});
+    }
     	async function getPlaceDetails(placeId){
     	  const request = {
     	    placeId: placeId,

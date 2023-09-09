@@ -1,7 +1,9 @@
 package com.example.map.ui
 
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -16,13 +18,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.apache.commons.text.StringEscapeUtils
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.InputStreamReader
-import java.net.URL
 
 
 class MainActivity : AppCompatActivity() {
@@ -44,7 +47,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initOnClick() {
-        recenterBtn.setOnClickListener { mapWebView.loadUrl("javascript:recenterMap()") }
+        val darkModeStyles = loadJSONFromAsset("map/dark_mode_style.json")
+        recenterBtn.setOnClickListener { mapWebView.loadUrl("javascript:recenterMap()")
+            mapWebView.loadUrl("javascript:enableDarkMode($darkModeStyles)")
+        }
     }
 
     private fun setUpWebView() {
@@ -53,7 +59,30 @@ class MainActivity : AppCompatActivity() {
         mapWebView.settings.databaseEnabled = true
         mapWebView.settings.domStorageEnabled = true
         mapWebView.settings.cacheMode = WebSettings.LOAD_NO_CACHE
-
+/*
+        mapWebView.setOnTouchListener(object : View.OnTouchListener {
+            override fun onTouch(view: View?, event: MotionEvent?): Boolean {
+                val action: Int? = event?.actionMasked
+                return when (action) {
+                    MotionEvent.ACTION_MOVE -> {
+                        val javascript =
+                            "(function() { return document.documentElement.outerHTML; })();"
+                        mapWebView?.evaluateJavascript(javascript) { html ->
+                            val htmlContent = StringEscapeUtils.unescapeJava(html)
+                            val path: File = filesDir
+                            val file = File(path, "offlineFile.txt")
+                            file.writeText("")
+                            val stream = FileOutputStream(file)
+                            stream.use { stream ->
+                                stream.write(htmlContent.toByteArray())
+                            }
+                        }
+                        false
+                    }
+                    else -> false
+                }
+            }
+        })*/
         mapWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 recenterBtn.visibility = View.VISIBLE
@@ -118,5 +147,21 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    fun loadJSONFromAsset(filename: String): String {
+        val json: String
+        try {
+            val inputStream: InputStream = assets.open(filename)
+            val size: Int = inputStream.available()
+            val buffer = ByteArray(size)
+            inputStream.read(buffer)
+            inputStream.close()
+            json = String(buffer, Charsets.UTF_8)
+        } catch (ex: IOException) {
+            ex.printStackTrace()
+            return ""
+        }
+        return json
     }
 }
