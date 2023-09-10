@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.example.map"
-    compileSdk = 33
+    compileSdk = AppConfig.compileSdk
 
     defaultConfig {
         applicationId = "com.example.map"
-        minSdk = 24
-        targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
+        minSdk = AppConfig.minSdk
+        targetSdk = AppConfig.targetSdk
+        versionCode = AppConfig.versionCode
+        versionName = AppConfig.versionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -40,16 +40,15 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.9.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.9.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
-    implementation ("androidx.webkit:webkit:1.2.0")
-    implementation ("org.apache.commons:commons-text:1.10.0")
-    implementation ("com.google.android.material:material:1.9.0")
-    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    implementation("androidx.core:core-ktx:${Versions.coreKtx}")
+    implementation("androidx.appcompat:appcompat:${Versions.appcompat}")
+    implementation("com.google.android.material:material:${Versions.material}")
+    implementation("androidx.constraintlayout:constraintlayout:${Versions.constraintlayout}")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}")
+    implementation ("androidx.webkit:webkit:${Versions.webkit}")
+    implementation ("org.apache.commons:commons-text:${Versions.apacheCommonsText}")
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:${Versions.lifecycleRuntimeKtx}")
+    testImplementation("junit:junit:${Versions.juint}")
+    androidTestImplementation("androidx.test.ext:junit:${Versions.extJunit}")
+    androidTestImplementation("androidx.test.espresso:espresso-core:${Versions.espressoCore}")
 }

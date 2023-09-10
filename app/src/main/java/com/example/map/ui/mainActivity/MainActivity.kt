@@ -49,8 +49,8 @@ class MainActivity : AppCompatActivity() {
         binding.themeCard.strokeColor = ContextCompat.getColor(this, R.color.grey)
         binding.btnRecenter.strokeColor =
             ColorStateList.valueOf(ContextCompat.getColor(this, R.color.grey))
-        window.statusBarColor = ContextCompat.getColor(this, R.color.grey)
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.grey)
 
         initOnClick()
         subscribeToLiveData()

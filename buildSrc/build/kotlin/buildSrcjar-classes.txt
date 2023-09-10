@@ -1,0 +1,1 @@
+/home/daffolap-847/AndroidStudioProjects/Map/buildSrc/build/classes/kotlin/main/AppConfig.class:/home/daffolap-847/AndroidStudioProjects/Map/buildSrc/build/classes/kotlin/main/Versions.class
