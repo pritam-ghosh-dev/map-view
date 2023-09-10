@@ -1,4 +1,4 @@
-package com.example.map.utils
+package com.example.map.common
 
 import android.content.ActivityNotFoundException
 import android.content.Context

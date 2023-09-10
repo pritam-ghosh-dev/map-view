@@ -27,9 +27,10 @@
         Android.recenterMap();
     }
     function enableDarkMode(darkModeStyles) {
-    console.log(darkModeStyles)
-      //  const darkStyles = JSON.parse(darkModeStyles)
         map.setOptions({styles: darkModeStyles});
+    }
+    function resetStyle() {
+        map.setOptions({styles: null});
     }
     	async function getPlaceDetails(placeId){
     	  const request = {
