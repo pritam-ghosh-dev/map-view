@@ -1,7 +1,6 @@
 package com.example.map.ui.mainActivity
 
 import android.content.res.ColorStateList
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -13,15 +12,17 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.map.R
+import com.example.map.common.CommonUtils
 import com.example.map.common.Constants
 import com.example.map.common.WebViewInterface
 import com.example.map.databinding.ActivityMainBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -29,7 +30,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 import java.io.InputStreamReader
 
 
@@ -50,8 +50,6 @@ class MainActivity : AppCompatActivity() {
         binding.btnRecenter.strokeColor =
             ColorStateList.valueOf(ContextCompat.getColor(this, R.color.grey))
         window.statusBarColor = ContextCompat.getColor(this, R.color.grey)
-
-        val window = this.window
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
         initOnClick()
@@ -62,50 +60,58 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun subscribeToLiveData() {
-        viewModel.currentUIMode.observe(this, Observer { value ->
+        viewModel.currentUIMode.observe(this) { value ->
             when (value) {
                 Constants.UI_MODE_LIGHT -> {
-                    binding.themeCard.setCardBackgroundColor(
-                        ContextCompat.getColor(
-                            this, R.color.white
-                        )
-                    )
-                    binding.themeImage.setImageDrawable(
-                        ContextCompat.getDrawable(
-                            this, R.drawable.ic_night_mode
-                        )
-                    )
-                    binding.btnRecenter.setBackgroundColor(
-                        ContextCompat.getColor(
-                            this, R.color.white
-                        )
-                    )
-                    binding.btnRecenter.setTextColor(ContextCompat.getColor(this, R.color.black))
-                    mapWebView.loadUrl("javascript:resetStyle()")
+                    enableLightTheme()
                 }
 
                 Constants.UI_MODE_DARK -> {
-                    val darkModeStyles = loadJSONFromAsset("map/dark_mode_style.json")
-                    binding.themeCard.setCardBackgroundColor(
-                        ContextCompat.getColor(
-                            this, R.color.grey
-                        )
-                    )
-                    binding.themeImage.setImageDrawable(
-                        ContextCompat.getDrawable(
-                            this, R.drawable.ic_day_mode
-                        )
-                    )
-                    binding.btnRecenter.setBackgroundColor(
-                        ContextCompat.getColor(
-                            this, R.color.grey
-                        )
-                    )
-                    binding.btnRecenter.setTextColor(ContextCompat.getColor(this, R.color.white))
-                    mapWebView.loadUrl("javascript:enableDarkMode($darkModeStyles)")
+                    enableDarkTheme()
                 }
             }
-        })
+        }
+    }
+
+    private fun enableDarkTheme() {
+        val darkModeStyles = CommonUtils.loadJSONFromAsset("map/dark_mode_style.json", this)
+        binding.themeCard.setCardBackgroundColor(
+            ContextCompat.getColor(
+                this, R.color.grey
+            )
+        )
+        binding.themeImage.setImageDrawable(
+            ContextCompat.getDrawable(
+                this, R.drawable.ic_day_mode
+            )
+        )
+        binding.btnRecenter.setBackgroundColor(
+            ContextCompat.getColor(
+                this, R.color.grey
+            )
+        )
+        binding.btnRecenter.setTextColor(ContextCompat.getColor(this, R.color.white))
+        mapWebView.loadUrl("javascript:enableDarkMode($darkModeStyles)")
+    }
+
+    private fun enableLightTheme() {
+        binding.themeCard.setCardBackgroundColor(
+            ContextCompat.getColor(
+                this, R.color.white
+            )
+        )
+        binding.themeImage.setImageDrawable(
+            ContextCompat.getDrawable(
+                this, R.drawable.ic_night_mode
+            )
+        )
+        binding.btnRecenter.setBackgroundColor(
+            ContextCompat.getColor(
+                this, R.color.white
+            )
+        )
+        binding.btnRecenter.setTextColor(ContextCompat.getColor(this, R.color.black))
+        mapWebView.loadUrl("javascript:resetStyle()")
     }
 
     private fun initOnClick() {
@@ -204,18 +210,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadUrlIntoWebView() {
-        webUrlCoroutineJob = CoroutineScope(Dispatchers.IO).launch {
+        webUrlCoroutineJob = lifecycleScope.launch {
             val path: File = filesDir
             val file = File(path, "offlineFile.txt")
-            val length = file.length().toInt()
-            val bytes = ByteArray(length)
-            val fileInputStream = FileInputStream(file)
-            try {
-                fileInputStream.read(bytes)
-            } finally {
-                fileInputStream.close()
+            val htmlStringDeferred = async(Dispatchers.IO) {
+                val length = file.length().toInt()
+                val bytes = ByteArray(length)
+                val fileInputStream = FileInputStream(file)
+                fileInputStream.use { fileInputStream ->
+                    fileInputStream.read(bytes)
+                }
+                String(bytes)
             }
-            val htmlString = String(bytes)
+            val htmlString = htmlStringDeferred.await()
             withContext(Dispatchers.Main) {
                 mapWebView.loadDataWithBaseURL(
                     "file:///android_asset/map/map.html", htmlString, "text/html", "base64", null
@@ -224,19 +231,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun loadJSONFromAsset(filename: String): String {
-        val json: String
-        try {
-            val inputStream: InputStream = assets.open(filename)
-            val size: Int = inputStream.available()
-            val buffer = ByteArray(size)
-            inputStream.read(buffer)
-            inputStream.close()
-            json = String(buffer, Charsets.UTF_8)
-        } catch (ex: IOException) {
-            ex.printStackTrace()
-            return ""
-        }
-        return json
-    }
 }
