@@ -1,6 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+
+    kotlin("kapt")
 }
 
 android {
@@ -27,11 +29,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         viewBinding = true
@@ -48,6 +50,10 @@ dependencies {
     implementation ("androidx.webkit:webkit:${Versions.webkit}")
     implementation ("org.apache.commons:commons-text:${Versions.apacheCommonsText}")
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:${Versions.lifecycleRuntimeKtx}")
+    implementation("androidx.room:room-runtime:${Versions.room}")
+    implementation("androidx.room:room-ktx:${Versions.room}")
+    annotationProcessor("androidx.room:room-compiler:${Versions.room}")
+    kapt("androidx.room:room-compiler:${Versions.room}")
     testImplementation("junit:junit:${Versions.juint}")
     androidTestImplementation("androidx.test.ext:junit:${Versions.extJunit}")
     androidTestImplementation("androidx.test.espresso:espresso-core:${Versions.espressoCore}")

@@ -12,4 +12,6 @@ object Versions {
     const val espressoCore = "3.5.1"
     const val gradle = "8.1.0"
     const val kotlin = "1.8.0"
+    const val room = "2.5.2"
+    const val ksp = "1.8.10-1.0.9"
 }
