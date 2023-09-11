@@ -21,7 +21,6 @@ import com.example.map.data.local.room.AppDatabase
 import com.example.map.data.local.room.webViewResponse.ResponseCache
 import com.example.map.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
