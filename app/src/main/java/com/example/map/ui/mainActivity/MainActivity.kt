@@ -1,6 +1,7 @@
 package com.example.map.ui.mainActivity
 
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -157,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             lifecycleScope.launch {
                                 try {
-                                    val response = viewModel.getConvertJsonToString(url)
+                                    val response = viewModel.getConvertJsonToString(url, request)
                                     val cache = ResponseCache(
                                         url = url,
                                         filePath = null,
@@ -168,12 +169,13 @@ class MainActivity : AppCompatActivity() {
                                     viewModel.insertResponseCache(cache)
 
                                 } catch (e: Exception) {
-                                    null
+                                    e.printStackTrace()
                                 }
                             }
                             return super.shouldInterceptRequest(view, request)
                         }
                     } else {
+                        // remove key and token from the url
                         val cleanedUrl = url.replace(Regex("[?&](key|token)=[^&]*"), "")
                         var cachedResponse: ResponseCache? = null
                         runBlocking {
@@ -205,5 +207,18 @@ class MainActivity : AppCompatActivity() {
         mapWebView.loadUrl("file:///android_asset/map/map.html")
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // change ui mode listening to device configuration change
+        when (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                viewModel.currentUIMode.value = Constants.UI_MODE_DARK
+            }
 
+            Configuration.UI_MODE_NIGHT_NO -> {
+                viewModel.currentUIMode.value = Constants.UI_MODE_LIGHT
+            }
+        }
+
+    }
 }

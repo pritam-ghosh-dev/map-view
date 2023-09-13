@@ -1,5 +1,6 @@
 package com.example.map.ui.mainActivity
 
+import android.webkit.WebResourceRequest
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.map.MainApplication
@@ -31,12 +32,13 @@ class MainActivityViewModel : ViewModel() {
     }
 
     // function to call an API and return the JSON response Stringified
-    suspend fun getConvertJsonToString(url: String): String {
+    suspend fun getConvertJsonToString(url: String, request: WebResourceRequest?): String {
         return withContext(Dispatchers.IO) {
             val urlObj = URL(url)
             val connection = urlObj.openConnection() as HttpURLConnection
             connection.useCaches = false
             connection.requestMethod = "POST"
+            request?.let { connection.requestMethod = it.method }
             val inputStream = connection.inputStream
 
             val reader = BufferedReader(InputStreamReader(inputStream))
