@@ -18,6 +18,7 @@ import java.net.URL
 
 class MainActivityViewModel : ViewModel() {
     private val database = AppDatabase.getInstance(MainApplication.appContext)
+    val requestQueue = mutableListOf<WebResourceRequest>()
 
     suspend fun getCachedResponse(url: String): ResponseCache? {
         return withContext(Dispatchers.IO) {

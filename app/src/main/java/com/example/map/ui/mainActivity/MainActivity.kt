@@ -20,12 +20,16 @@ import com.example.map.common.Constants
 import com.example.map.common.WebViewInterface
 import com.example.map.data.local.room.webViewResponse.ResponseCache
 import com.example.map.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileReader
+import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 
@@ -138,73 +142,140 @@ class MainActivity : AppCompatActivity() {
                         "https://maps.googleapis.com", true
                     ) == true) || (url?.contains("https://maps.gstatic.com/mapfiles", true) == true)
                 ) {
-                    var webResourceResponse: WebResourceResponse? = null
-
-                    if (url.contains("GetViewportInfo", true)) {
-                        var cachedResponse: ResponseCache? = null
-                        runBlocking {
-                            val job = async {
-                                cachedResponse = viewModel.getCachedResponse(url)
-                            }
-                            job.await()
-                        }
-                        if (cachedResponse != null) {
-                            val inputStream: InputStream = ByteArrayInputStream(
-                                cachedResponse?.response?.toByteArray(StandardCharsets.UTF_8)
-                            )
-                            WebResourceResponse(
-                                "application/json", "UTF-8", inputStream
-                            )
-                        } else {
-                            lifecycleScope.launch {
-                                try {
-                                    val response = viewModel.getConvertJsonToString(url, request)
-                                    val cache = ResponseCache(
-                                        url = url,
-                                        filePath = null,
-                                        response = response,
-                                        mimeType = "application/json",
-                                        encoding = "UTF-8"
-                                    )
-                                    viewModel.insertResponseCache(cache)
-
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                            return super.shouldInterceptRequest(view, request)
-                        }
-                    } else {
-                        // remove key and token from the url
-                        val cleanedUrl = url.replace(Regex("[?&](key|token)=[^&]*"), "")
-                        var cachedResponse: ResponseCache? = null
-                        runBlocking {
-                            val getCachedResponseJob = async {
-                                cachedResponse = viewModel.getCachedResponse(cleanedUrl)
-                            }
-                            getCachedResponseJob.await()
-                        }
-                        if (cachedResponse != null) {
-                            val file = cachedResponse?.filePath?.let { File(it) }
-                            val fis = FileInputStream(file)
-                            webResourceResponse = WebResourceResponse(
-                                cachedResponse?.mimeType, cachedResponse?.encoding, fis
-                            )
-                        } else {
-                            lifecycleScope.launch {
-                                val cache = viewModel.getImageResponseCacheData(url)
-                                viewModel.insertResponseCache(cache)
-                            }
-                            return super.shouldInterceptRequest(view, request)
-                        }
+                    // Add the request to the queue
+                    synchronized(viewModel.requestQueue) {
+                        viewModel.requestQueue.add(request)
                     }
-                    return webResourceResponse
-                }
+                    // Process the request concurrently
+                    processRequest(request)
+                    // response will be returned later
+                    return null
+                    }
                 return super.shouldInterceptRequest(view, request)
             }
         }
         mapWebView.addJavascriptInterface(WebViewInterface(this), "Android")
         mapWebView.loadUrl("file:///android_asset/map/map.html")
+    }
+
+    private fun processRequest(request: WebResourceRequest) {
+        val url = request.url?.toString()
+        if (url != null) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                // Process the request and get the WebResourceResponse
+                val webResourceResponse = handleRequest(request)
+
+                // Return the response on the main thread
+                launch(Dispatchers.Main) {
+                    returnResourceToWebView(request, webResourceResponse)
+                }
+            }
+        }
+
+    }
+
+    private fun handleRequest(request: WebResourceRequest): WebResourceResponse? {
+        val url = request.url.toString()
+        var webResourceResponse: WebResourceResponse? = null
+
+        if (url.contains("GetViewportInfo", true)) {
+            var cachedResponse: ResponseCache? = null
+            runBlocking {
+                val job = async {
+                    cachedResponse = viewModel.getCachedResponse(url)
+                }
+                job.await()
+            }
+            if (cachedResponse != null) {
+                val inputStream: InputStream = ByteArrayInputStream(
+                    cachedResponse?.response?.toByteArray(StandardCharsets.UTF_8)
+                )
+               webResourceResponse = WebResourceResponse(
+                    "application/json", "UTF-8", inputStream
+                )
+            } else {
+                lifecycleScope.launch {
+                    try {
+                        val response = viewModel.getConvertJsonToString(url, request)
+                        val cache = ResponseCache(
+                            url = url,
+                            filePath = null,
+                            response = response,
+                            mimeType = "application/json",
+                            encoding = "UTF-8"
+                        )
+                        viewModel.insertResponseCache(cache)
+
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        } else {
+            // remove key and token from the url
+            val cleanedUrl = url.replace(Regex("[?&](key|token)=[^&]*"), "")
+            var cachedResponse: ResponseCache? = null
+            runBlocking {
+                val getCachedResponseJob = async {
+                    cachedResponse = viewModel.getCachedResponse(cleanedUrl)
+                }
+                getCachedResponseJob.await()
+            }
+            if (cachedResponse != null) {
+                val file = cachedResponse?.filePath?.let { File(it) }
+                val fis = FileInputStream(file)
+                webResourceResponse = WebResourceResponse(
+                    cachedResponse?.mimeType, cachedResponse?.encoding, fis
+                )
+            } else {
+                lifecycleScope.launch {
+                    val cache = viewModel.getImageResponseCacheData(url)
+                    viewModel.insertResponseCache(cache)
+                }
+            }
+        }
+        return webResourceResponse
+
+    }
+
+    private fun returnResourceToWebView(request: WebResourceRequest, response: WebResourceResponse?) {
+        val url = request.url?.toString()
+        // Remove the request from the queue
+        synchronized(viewModel.requestQueue) {
+            viewModel.requestQueue.remove(request)
+        }
+
+        if (response != null) {
+            if(response.mimeType.equals("text/javascript")){
+                val cachedJsFile = File(cacheDir, "${url.hashCode()}.js")
+                val stringBuilder = StringBuilder()
+                try {
+                    val bufferedReader = BufferedReader(FileReader(cachedJsFile))
+                    var line: String? = bufferedReader.readLine()
+                    while (line != null) {
+                        stringBuilder.append(line).append("\n")
+                        line = bufferedReader.readLine()
+                    }
+                    bufferedReader.close()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                val jsFileContent = stringBuilder.toString()
+                mapWebView.loadDataWithBaseURL(url, jsFileContent, response.mimeType, response.encoding, null)
+            }else{
+                val cachedImage = File(cacheDir, "${url.hashCode()}.png",)
+                var imageData = """
+            <html>
+                <body>
+                    <img src="file://${cachedImage.absoluteFile}" alt="Cached Image">
+                </body>
+            </html>
+        """.trimIndent()
+
+                mapWebView.loadDataWithBaseURL(url, imageData, "text/html", response.encoding, null)
+            }
+
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
