@@ -53,6 +53,19 @@ class MainActivity : AppCompatActivity() {
         setUpWebView()
     }
 
+
+    override fun onResume() {
+        super.onResume()
+        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                enableDarkTheme()
+            }
+
+            Configuration.UI_MODE_NIGHT_NO -> {
+                enableLightTheme()
+            }
+        }
+    }
     private fun subscribeToLiveData() {
         viewModel.currentUIMode.observe(this) { value ->
             when (value) {
@@ -205,6 +218,7 @@ class MainActivity : AppCompatActivity() {
         }
         mapWebView.addJavascriptInterface(WebViewInterface(this), "Android")
         mapWebView.loadUrl("file:///android_asset/map/map.html")
+
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
