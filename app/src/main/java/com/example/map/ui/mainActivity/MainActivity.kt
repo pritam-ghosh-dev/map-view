@@ -150,7 +150,7 @@ class MainActivity : AppCompatActivity() {
                 val url = request?.url?.toString()
                 if ((url?.contains(
                         "https://maps.googleapis.com/maps/vt", true
-                    ) == true) || (url?.contains("https://maps.gstatic.com/mapfiles", true) == true)
+                    ) == true) || (url?.contains("https://maps.gstatic.com/mapfiles/api-3/images/", true) == true)
                 ) {
 
                     val mapWebResourceResponse = MapWebResourceResponse("application/json", "UTF-8", null, callback = {
