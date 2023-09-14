@@ -56,14 +56,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-            Configuration.UI_MODE_NIGHT_YES -> {
+        val systemTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if(systemTheme == Configuration.UI_MODE_NIGHT_YES){
+            enableDarkTheme()
+        }else{
+            if(viewModel.currentUIMode.value.equals(Constants.UI_MODE_DARK))
                 enableDarkTheme()
-            }
-
-            Configuration.UI_MODE_NIGHT_NO -> {
+            else
                 enableLightTheme()
-            }
         }
     }
     private fun subscribeToLiveData() {

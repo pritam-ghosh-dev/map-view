@@ -5,6 +5,7 @@
 	  map = new Map(document.getElementById("map"), {
 	    center: myLatLng,
 	    zoom: 15,
+	    streetViewControl: false,
 	  });
 	  new google.maps.Marker({
 	    position: myLatLng,
