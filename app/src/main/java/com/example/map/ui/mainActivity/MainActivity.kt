@@ -13,7 +13,6 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import com.example.map.R
 import com.example.map.common.CommonUtils
 import com.example.map.common.Constants
@@ -22,13 +21,9 @@ import com.example.map.data.local.room.webViewResponse.ResponseCache
 import com.example.map.databinding.ActivityMainBinding
 import com.example.map.ui.mainActivity.utility.MapWebResourceResponse
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
-import java.nio.charset.StandardCharsets
 
 
 class MainActivity : AppCompatActivity() {
@@ -170,12 +165,23 @@ class MainActivity : AppCompatActivity() {
                                     cachedResponse?.mimeType, cachedResponse?.encoding, fis
                                 )
                             } else {
-                                lifecycleScope.launch {
-                                    val cache = viewModel.getImageResponseCacheData(url)
-                                    if(cache.filePath!= null)
+                                runBlocking{
+                                    val deferredCache = async {
+                                        viewModel.getImageResponseCacheData(url)
+                                    }
+                                    val cache = deferredCache.await()
+                                    if(cache.filePath!= null){
                                         viewModel.insertResponseCache(cache)
+                                        val file = File(cache.filePath)
+                                        val fis = FileInputStream(file)
+                                        return@runBlocking WebResourceResponse(
+                                            cache.mimeType, cache.encoding, fis
+                                        )
+                                    }else {
+                                        return@runBlocking super.shouldInterceptRequest(view, request)
+                                    }
+
                                 }
-                                return@MapWebResourceResponse WebResourceResponse("application/json", "UTF-8", null)
                             }
                     })
 
